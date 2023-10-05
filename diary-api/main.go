@@ -42,16 +42,20 @@ func serveApplication() {
 	publicRoutes.GET("/users/:username", controller.GetUserbyUsername)
 	publicRoutes.DELETE("/users/:username", controller.DeleteUser)
 	publicRoutes.PATCH("/changepass/:username", controller.ChangePassword)
-	publicRoutes.GET("/:entryID", controller.GetEntrybyId)
+	
 
 	publicRoutes.POST("/film", controller.AddFilm)
 	publicRoutes.GET("/getallfilm", controller.GetAllFilm)
+	publicRoutes.GET("/ratingscore/:filmID", controller.RatingScore)
 
 	protectedRoutes := router.Group("/api")
 	protectedRoutes.Use(middleware.JWTAuthMiddleware())
 	protectedRoutes.POST("/entry", controller.AddEntry)
 	protectedRoutes.GET("/entry", controller.GetAllEntries)
 	protectedRoutes.DELETE("/:ID", controller.DeleteEntry)
+	protectedRoutes.GET("/entry/:user_id", controller.CountEntry)
+	protectedRoutes.POST("/vote", controller.AddVote)
+	protectedRoutes.GET("/:ID", controller.GetEntrybyId)
 
 	router.Run(":8000")
 	fmt.Println("Server running on port 8000")

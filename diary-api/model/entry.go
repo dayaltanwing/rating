@@ -11,7 +11,8 @@ type Entry struct {
 	Content   string `gorm:"type:text" json:"content"`
 	CountFilm uint
 	UserID    uint
-	Films     []Film `gorm:"many2many:entry_films;" json:"films"`
+	FilmID    uint
+	Votes  []Vote `gorm:"many2many:film_votes;" json:"votes"`
 }
 
 func (entry *Entry) Save() (*Entry, error) {
@@ -24,7 +25,7 @@ func (entry *Entry) Save() (*Entry, error) {
 
 func FindEntryById(id uint) (Entry, error) {
 	var entry Entry
-	err := database.Database.Where("entryID=?", id).Find(&entry).Error
+	err := database.Database.Where("ID=?", id).Find(&entry).Error
 	if err != nil {
 		return Entry{}, err
 	}
@@ -33,7 +34,7 @@ func FindEntryById(id uint) (Entry, error) {
 
 func DeleteEntry(id uint) (Entry, error) {
 	var entry Entry
-	err := database.Database.Where("entryID=?", id).Delete(&entry).Error
+	err := database.Database.Where("ID=?", id).Delete(&entry).Error
 	if err != nil {
 		return Entry{}, err
 	}
@@ -46,13 +47,4 @@ func GetAllEntries() ([]Entry, error) {
 		return nil, err
 	}
 	return entries, nil
-}
-
-func Count(id uint) (int64, error) {
-	var entryCount int64
-	if err := database.Database.Where("user_id = ?", id).Count(&entryCount).Error; err != nil {
-		return 0, err
-	}
-
-	return entryCount, nil
 }

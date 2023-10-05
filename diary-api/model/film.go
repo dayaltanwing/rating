@@ -8,11 +8,16 @@ import (
 
 type Film struct {
 	gorm.Model
-	Name        string `gorm:"type:text" json:"content"`
+	Name        string `gorm:"type:text" json:"name"`
 	CountEntry  uint
 	RatingScore uint
+	Votes       []Vote `gorm:"many2many:film_votes;" json:"votes"`
 	EntryID     uint
-	Entries     []Entry
+}
+
+type ScoreResult struct {
+    TotalScore int
+    VoteCount  int
 }
 
 func (f *Film) Save() (*Film, error) {
@@ -57,3 +62,22 @@ func FindFilmById(id uint) (Film, error) {
 	}
 	return film, nil
 }
+
+func CalculateAverageScoreForFilm(filmID uint) (float64, error) {
+    var result ScoreResult
+
+    if err := database.Database.Model(&Film{}).Where("id = ?", filmID).
+        Joins("JOIN film_votes ON films.id = film_votes.film_id").
+        Select("SUM(film_votes.score) AS total_score, COUNT(film_votes.score) AS vote_count").
+        Scan(&result).Error; err != nil {
+        return 0.0, err
+    }
+
+    if result.VoteCount == 0 {
+        return 0.0, nil 
+    }
+
+    averageScore := float64(result.TotalScore) / float64(result.VoteCount)
+    return averageScore, nil
+}
+

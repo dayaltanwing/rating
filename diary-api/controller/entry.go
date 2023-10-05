@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"diary-api/database"
 	"diary-api/helper"
 	"diary-api/model"
 	"net/http"
@@ -27,7 +28,7 @@ func AddEntry(context *gin.Context) {
 		return
 	}
 
-	context.JSON(http.StatusCreated, gin.H{"user": savedUser})
+	context.JSON(http.StatusCreated, gin.H{"entry": savedUser})
 }
 
 func GetAllEntries(context *gin.Context) {
@@ -42,7 +43,7 @@ func GetAllEntries(context *gin.Context) {
 }
 
 func DeleteEntry(context *gin.Context) {
-	id := context.Param("entryID")
+	id := context.Param("ID")
 	entryID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid entry ID"})
@@ -60,7 +61,7 @@ func DeleteEntry(context *gin.Context) {
 }
 
 func GetEntrybyId(context *gin.Context) {
-	id := context.Param("entryID")
+	id := context.Param("ID")
 	entryID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid entry ID"})
@@ -70,24 +71,22 @@ func GetEntrybyId(context *gin.Context) {
 	entry, err := model.FindEntryById(uint(entryID))
 
 	if err != nil {
-		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete entry"})
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get entry"})
 		return
 	}
 
-	context.JSON(http.StatusOK, gin.H{"deleted successfully": entry})
+	context.JSON(http.StatusOK, gin.H{"get successfully": entry})
 }
 
 func CountEntry(context *gin.Context) {
 	id := context.Param("user_id")
-	entryID, err := strconv.ParseUint(id, 10, 64)
+	userID, err := strconv.ParseUint(id, 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid entry ID"})
 		return
 	}
 
-	var entryCount int64
-
-	entryCount, countErr := model.Count(uint(entryID))
+	entryCount, countErr := Count(uint(userID))
 
 	if countErr != nil {
 		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to count entries"})
@@ -95,4 +94,12 @@ func CountEntry(context *gin.Context) {
 	}
 
 	context.JSON(http.StatusOK, gin.H{"count": entryCount})
+}
+
+func Count(userID uint) (int64, error) {
+	var count int64
+	if err := database.Database.Model(&model.Entry{}).Where("user_id = ?", userID).Count(&count).Error; err != nil {
+		return 0, err
+	}
+	return count, nil
 }

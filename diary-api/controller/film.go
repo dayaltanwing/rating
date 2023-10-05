@@ -1,8 +1,6 @@
 package controller
 
 import (
-	"context"
-	"diary-api/database"
 	"diary-api/model"
 	"net/http"
 	"strconv"
@@ -18,14 +16,14 @@ func AddFilm(context *gin.Context) {
 		return
 	}
 
-	savedEntry, err := input.Save()
+	savedFilm, err := input.Save()
 
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	context.JSON(http.StatusCreated, gin.H{"data": savedEntry})
+	context.JSON(http.StatusCreated, gin.H{"data": savedFilm})
 }
 
 func GetFilmbyName(context *gin.Context) {
@@ -64,48 +62,19 @@ func GetAllFilm(context *gin.Context) {
 	context.JSON(http.StatusOK, films)
 }
 
-func GetFilmRatingScore(context *gin.Context) {
-	filmIDParam := context.Param("filmID")
-
-	filmID, err := strconv.ParseUint(filmIDParam, 10, 64)
+func RatingScore(context *gin.Context) {
+	filmID := context.Param("filmID")
+	ID, err := strconv.ParseUint(filmID, 10, 64)
 	if err != nil {
 		context.JSON(http.StatusBadRequest, gin.H{"error": "Invalid film ID"})
 		return
 	}
+	averageScore, err := model.CalculateAverageScoreForFilm(uint(ID))
 
-	var film model.Film
-
-	if err := database.Database.First(&film, filmID).Error; err != nil {
-		context.JSON(http.StatusNotFound, gin.H{"error": "Film not found"})
+	if err != nil {
+		context.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to caculate"})
 		return
 	}
 
-	ratingScore := calculateRatingScore(film)
-
-	context.JSON(http.StatusOK, gin.H{"rating_score": ratingScore})
+	context.JSON(http.StatusOK, averageScore)
 }
-
-func calculateRatingScore(ratingsParam string) float64 {
-    // Split the ratingsParam string into individual ratings
-    ratings := strings.Split(ratingsParam, ",")
-    
-    if len(ratings) == 0 {
-        return 0.0
-    }
-
-    totalRating := 0.0
-    for _, ratingStr := range ratings {
-        // Convert each rating string to a float64
-        rating, err := strconv.ParseFloat(ratingStr, 64)
-        if err != nil {
-            // Handle parsing error if needed
-            return 0.0
-        }
-        totalRating += rating
-    }
-
-    averageRating := totalRating / float64(len(ratings))
-
-    return averageRating
-}
-
